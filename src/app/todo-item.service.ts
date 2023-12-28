@@ -116,8 +116,8 @@ const initialState: Readonly<TodoItemsState> = {
 
 @Injectable({ providedIn: 'root' })
 export class TodoItemService {
-  readonly nextPage$ = new Source('[Todo Items State] Next Page');
-  readonly previousPage$ = new Source('[Todo Items State] Previous Page');
+  readonly nextPage$ = new Source<void>('[Todo Items State] Next Page');
+  readonly previousPage$ = new Source<void>('[Todo Items State] Previous Page');
   readonly #setTodoItems$ = new Source<TodoItem[]>(
     '[Todo Items State] Set Todo Items'
   );
