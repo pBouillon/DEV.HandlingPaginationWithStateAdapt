@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
 
 import { Observable, of } from 'rxjs';
+import { joinAdapters } from '@state-adapt/core';
+import { EntityState } from '@state-adapt/core/adapters';
 
-import { TodoItem } from './todo-item';
+import { TodoItem, todoItemsAdapter } from './todo-item';
+import { Pagination, paginationAdapter } from './pagination';
 
 const TODO_ITEMS: TodoItem[] = [
   {
@@ -92,6 +95,16 @@ const TODO_ITEMS: TodoItem[] = [
     completed: false,
   },
 ];
+
+export interface TodoItemsState {
+  pagination: Pagination;
+  todoItems: EntityState<TodoItem, 'id'>;
+}
+
+export const todoItemsStateAdapter = joinAdapters<TodoItemsState>()({
+  pagination: paginationAdapter,
+  todoItems: todoItemsAdapter,
+});
 
 @Injectable({ providedIn: 'root' })
 export class TodoItemService {
