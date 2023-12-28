@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 
-import { Observable, of, switchMap } from 'rxjs';
+import { adapt } from '@state-adapt/angular';
 import { joinAdapters } from '@state-adapt/core';
 import { EntityState, createEntityState } from '@state-adapt/core/adapters';
-
-import { TodoItem, todoItemsAdapter } from './todo-item';
-import { Pagination, paginationAdapter } from './pagination';
-import { adapt } from '@state-adapt/angular';
 import { Source } from '@state-adapt/rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, map, of, switchMap } from 'rxjs';
+
+import { Pagination, paginationAdapter } from './pagination';
+import { TodoItem, todoItemsAdapter } from './todo-item';
 
 const TODO_ITEMS: TodoItem[] = [
   {
@@ -130,6 +130,16 @@ export class TodoItemService {
       setTodoItemsAll: this.#setTodoItems$,
     },
   });
+
+  readonly vm = toSignal(
+    this.#store.state$.pipe(
+      map((state) => ({
+        pagination: state.pagination,
+        todoItems: Object.values(state.todoItems.entities),
+      }))
+    ),
+    { requireSync: true }
+  );
 
   constructor() {
     this.#store.pagination$
