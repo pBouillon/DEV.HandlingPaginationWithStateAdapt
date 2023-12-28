@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 
-import { Observable, of } from 'rxjs';
+import { Observable, of, switchMap } from 'rxjs';
 import { joinAdapters } from '@state-adapt/core';
-import { EntityState } from '@state-adapt/core/adapters';
+import { EntityState, createEntityState } from '@state-adapt/core/adapters';
 
 import { TodoItem, todoItemsAdapter } from './todo-item';
 import { Pagination, paginationAdapter } from './pagination';
+import { adapt } from '@state-adapt/angular';
+import { Source } from '@state-adapt/rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 const TODO_ITEMS: TodoItem[] = [
   {
@@ -104,10 +107,39 @@ export interface TodoItemsState {
 export const todoItemsStateAdapter = joinAdapters<TodoItemsState>()({
   pagination: paginationAdapter,
   todoItems: todoItemsAdapter,
-});
+})();
+
+const initialState: Readonly<TodoItemsState> = {
+  pagination: { offset: 0, pageSize: 5 },
+  todoItems: createEntityState<TodoItem, 'id'>(),
+};
 
 @Injectable({ providedIn: 'root' })
 export class TodoItemService {
+  readonly nextPage$ = new Source('[Todo Items State] Next Page');
+  readonly previousPage$ = new Source('[Todo Items State] Previous Page');
+  readonly #setTodoItems$ = new Source<TodoItem[]>(
+    '[Todo Items State] Set Todo Items'
+  );
+
+  readonly #store = adapt(initialState, {
+    adapter: todoItemsStateAdapter,
+    sources: {
+      previousPaginationPage: this.previousPage$,
+      nextPaginationPage: this.nextPage$,
+      setTodoItemsAll: this.#setTodoItems$,
+    },
+  });
+
+  constructor() {
+    this.#store.pagination$
+      .pipe(
+        takeUntilDestroyed(),
+        switchMap((pagination) => this.getTodoItems(pagination))
+      )
+      .subscribe((todoItems) => this.#setTodoItems$.next(todoItems));
+  }
+
   getTodoItems(options: {
     offset: number;
     pageSize: number;
